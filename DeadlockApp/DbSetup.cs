@@ -55,32 +55,63 @@ namespace DeadlockApp
         {
             // Create database connection
             var connection = new RedGate.Shared.SQL.DBConnectionInformation(instance, databaseName);
-            var batch1 = @"IF OBJECT_ID(N'[dbo].[UserA]') IS NULL
-                            EXEC sp_executesql	N'CREATE PROCEDURE UserA AS
+            var batch1 = @"IF OBJECT_ID(N'[dbo].[UserADeadlock]') IS NULL
+                            EXEC sp_executesql	N'CREATE PROCEDURE UserADeadlock AS
 	                            BEGIN
 		                            BEGIN TRANSACTION
 			                            UPDATE dbo.Employees SET EmpName = ''Mary'' WHERE EmpId = 1
 			                            WAITFOR DELAY ''00:01''
 			                            UPDATE dbo.Suppliers SET Fax = ''555-1212'' WHERE SupplierId = 1
-		                            COMMIT TRANSACTION
+		                            ROLLBACK
 				
 	                            END'";
 
-            var batch2 = @"IF OBJECT_ID(N'[dbo].[UserB]') IS NULL
-                            EXEC sp_executesql	N'CREATE PROCEDURE UserB AS
+            var batch2 = @"IF OBJECT_ID(N'[dbo].[UserBDeadlock]') IS NULL
+                            EXEC sp_executesql	N'CREATE PROCEDURE UserBDeadlock AS
 		                        BEGIN
 			                        BEGIN TRANSACTION
 				                        UPDATE dbo.Suppliers SET Fax = ''555-1212'' WHERE SupplierId = 1
 				                        WAITFOR DELAY ''00:01''
 				                        UPDATE dbo.Employees SET EmpName = ''Mary'' WHERE EmpId = 1	
-			                        COMMIT TRANSACTION
+			                        ROLLBACK
 		                        END'";
 
+            var batch3 = @"IF OBJECT_ID(N'[dbo].[UserABlocking]') IS NULL
+                            EXEC sp_executesql	N'CREATE PROCEDURE UserABlocking AS
+	                            BEGIN
+		                            BEGIN TRANSACTION
+			                            UPDATE dbo.Suppliers SET Fax = ''555-1212'' WHERE SupplierId = 1
+	                                    WAITFOR DELAY ''00:10''
+		                            ROLLBACK
+				
+	                            END'";
+
+            var batch4 = @"IF OBJECT_ID(N'[dbo].[UserBBlocking]') IS NULL
+                            EXEC sp_executesql	N'CREATE PROCEDURE UserBBlocking AS
+	                            BEGIN
+		                            BEGIN TRANSACTION
+			                            UPDATE dbo.Employees SET EmpName = ''Mary'' WHERE EmpId = 1	
+	                                    UPDATE dbo.Suppliers SET Fax = ''555-1212'' WHERE SupplierId = 1
+		                            ROLLBACK
+				
+	                            END'";
+
+            var batch5 = @"IF OBJECT_ID(N'[dbo].[UserCBlocking]') IS NULL
+                            EXEC sp_executesql	N'CREATE PROCEDURE UserCBlocking AS
+	                            BEGIN
+		                            BEGIN TRANSACTION
+			                            UPDATE dbo.Employees SET EmpName = ''Martha'' WHERE EmpId = 1
+		                            ROLLBACK
+				
+	                            END'";
 
             using (var block = new RedGate.Shared.SQL.ExecutionBlock.ExecutionBlock())
             {
                 block.AddBatch(batch1);
                 block.AddBatch(batch2);
+                block.AddBatch(batch3);
+                block.AddBatch(batch4);
+                block.AddBatch(batch5);
                 var executor = new RedGate.Shared.SQL.ExecutionBlock.BlockExecutor();
                 executor.ExecuteBlock(block, connection);
             }
