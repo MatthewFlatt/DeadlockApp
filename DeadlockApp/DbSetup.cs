@@ -4,15 +4,17 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using RedGate.Shared;
+using RedGate.Shared.SQL;
 
 namespace DeadlockApp
 {
     class DbSetup
     {
-        public void CreateTables(string instance, string databaseName)
+        public void CreateTables(string instance, string databaseName, string username, string password)
         {
             // Create database connection
-            var connection = new RedGate.Shared.SQL.DBConnectionInformation(instance, databaseName);
+            var connection = string.IsNullOrEmpty(username) ? new DBConnectionInformation(instance, databaseName) : new DBConnectionInformation(instance, databaseName, username, password);
+            
             var batch1 = @"IF OBJECT_ID(N'[dbo].[Employees]', 'U') IS NOT NULL
                            BEGIN
                                 DROP TABLE Employees
@@ -51,10 +53,10 @@ namespace DeadlockApp
 
         }
 
-        public void CreateSprocs(string instance, string databaseName)
+        public void CreateSprocs(string instance, string databaseName, string username, string password)
         {
             // Create database connection
-            var connection = new RedGate.Shared.SQL.DBConnectionInformation(instance, databaseName);
+            var connection = string.IsNullOrEmpty(username) ? new DBConnectionInformation(instance, databaseName) : new DBConnectionInformation(instance, databaseName, username, password);
             var batch1 = @"IF OBJECT_ID(N'[dbo].[UserADeadlock]') IS NULL
                             EXEC sp_executesql	N'CREATE PROCEDURE UserADeadlock AS
 	                            BEGIN

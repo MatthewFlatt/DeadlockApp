@@ -15,17 +15,29 @@ namespace DeadlockApp
             {
                 var instance = args[0];
                 var database = args[1];
-                var setup = new DbSetup();
-                setup.CreateTables(instance, database);
-                setup.CreateSprocs(instance, database);
+                string username = "";
+                string password = "";
+                try
+                {
+                    username = args[2];
+                    password = args[3];
+                }
+                catch (Exception)
+                {
+                    // ignored
+                }
 
-                if (args.Length == 2)
+                var setup = new DbSetup();
+                setup.CreateTables(instance, database, username, password);
+                setup.CreateSprocs(instance, database, username, password);
+
+                if (args.Length == 2 || args.Length == 4)
                 {
                     new Thread(() =>
                     {
                         Thread.CurrentThread.IsBackground = true;
                         var runA = new SprocRunner();
-                        runA.RunSProc(instance, database, "UserADeadlock");
+                        runA.RunSProc(instance, database, "UserADeadlock", username, password);
                     }).Start();
 
                     new Thread(() =>
@@ -33,7 +45,7 @@ namespace DeadlockApp
                         Thread.CurrentThread.IsBackground = true;
                         Thread.Sleep(5000);
                         var runB = new SprocRunner();
-                        runB.RunSProc(instance, database, "UserBDeadlock");
+                        runB.RunSProc(instance, database, "UserBDeadlock", username, password);
                     }).Start();
 
                     Thread.Sleep(TimeSpan.FromMinutes(2));
@@ -44,7 +56,7 @@ namespace DeadlockApp
                     {
                         Thread.CurrentThread.IsBackground = true;
                         var runA = new SprocRunner();
-                        runA.RunSProc(instance, database, "UserABlocking");
+                        runA.RunSProc(instance, database, "UserABlocking", username, password);
                     }).Start();
 
                     new Thread(() =>
@@ -52,7 +64,7 @@ namespace DeadlockApp
                         Thread.CurrentThread.IsBackground = true;
                         Thread.Sleep(TimeSpan.FromSeconds(5));
                         var runB = new SprocRunner();
-                        runB.RunSProc(instance, database, "UserBBlocking");
+                        runB.RunSProc(instance, database, "UserBBlocking", username, password);
                     }).Start();
 
                     new Thread(() =>
@@ -60,7 +72,7 @@ namespace DeadlockApp
                         Thread.CurrentThread.IsBackground = true;
                         Thread.Sleep(TimeSpan.FromSeconds(5));
                         var runC = new SprocRunner();
-                        runC.RunSProc(instance, database, "UserCBlocking");
+                        runC.RunSProc(instance, database, "UserCBlocking", username, password);
                     }).Start();
 
                     new Thread(() =>
@@ -68,12 +80,12 @@ namespace DeadlockApp
                         Thread.CurrentThread.IsBackground = true;
                         Thread.Sleep(TimeSpan.FromSeconds(5));
                         var runC = new SprocRunner();
-                        runC.RunSProc(instance, database, "UserCBlocking");
+                        runC.RunSProc(instance, database, "UserCBlocking", username, password);
                     }).Start();
 
                     Thread.Sleep(TimeSpan.FromSeconds(5));
                     var runLast = new SprocRunner();
-                    runLast.RunSProc(instance, database, "UserCBlocking");
+                    runLast.RunSProc(instance, database, "UserCBlocking", username, password);
 
                 }
                 
