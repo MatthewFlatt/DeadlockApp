@@ -49,3 +49,5 @@ Temporary Items
 DeadlockApp/bin
 DeadlockApp/obj
 DeadlockApp/packages
+DeadlockApp/.vs
+*.user
